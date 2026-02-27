@@ -20,6 +20,7 @@ frozen-daily.json
 # Local overrides (users should copy from examples/)
 # config.json is included as example, users can modify
 .DS_Store
+.env
 __pycache__/
 *.pyc
 server.log

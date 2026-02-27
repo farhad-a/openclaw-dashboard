@@ -1,16 +1,21 @@
 services:
   dashboard:
     image: ghcr.io/mudrii/openclaw-dashboard:edge
+    # build: .
     container_name: openclaw-dashboard
     restart: unless-stopped
+    pid: host
     ports:
       - "8080:8080"
     environment:
+      - PUID=${PUID:-998}
+      - PGID=${PGID:-998}
       - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
       - TZ=${TZ:-UTC}
     volumes:
-      - ./config.json:/app/config.json:ro
-      - ${OPENCLAW_HOME:-~/.openclaw}:/home/dashboard/.openclaw
+      - ./config.json:/app/config.json
+      # - ./data.json:/app/data.json
+      - ${OPENCLAW_HOME:-~/.openclaw}:/home/dashboard/.openclaw:ro
     healthcheck:
       test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/')"]
       interval: 30s
