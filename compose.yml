@@ -6,6 +6,7 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN:-}
       - TZ=${TZ:-UTC}
     volumes:
       - ./config.json:/app/config.json:ro

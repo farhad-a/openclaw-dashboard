@@ -1,18 +1,22 @@
 FROM python:3.12-slim
 
+ENV PYTHONUNBUFFERED=1
+ENV HOME=/home/dashboard
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash curl git jq procps \
     && rm -rf /var/lib/apt/lists/*
 
-COPY index.html server.py refresh.sh themes.json ./
-
-RUN chmod +x refresh.sh
-
 RUN useradd -r -u 1001 dashboard && \
     mkdir -p /home/dashboard/.openclaw && \
     chown -R dashboard:dashboard /app /home/dashboard
+
+COPY --chown=dashboard:dashboard index.html server.py refresh.sh themes.json ./
+
+RUN chmod +x refresh.sh
+
 USER dashboard
 
 VOLUME ["/home/dashboard/.openclaw"]

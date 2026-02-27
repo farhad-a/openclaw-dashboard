@@ -49,16 +49,14 @@ _last_refresh = 0
 _refresh_lock = threading.Lock()
 _debounce_sec = 30
 _ai_cfg = {}
-_gateway_token = ""
-
-
-OPENCLAW_PATH = os.path.expanduser("~/.openclaw")
+_gateway_token = os.getenv("OPENCLAW_GATEWAY_TOKEN", "")
+_openclaw_path = os.getenv("OPENCLAW_PATH", os.path.expanduser("~/.openclaw"))
 
 
 def _load_agent_default_models():
     """Read agent default models from openclaw.json dynamically."""
     try:
-        with open(os.path.join(OPENCLAW_PATH, "openclaw.json")) as f:
+        with open(os.path.join(_openclaw_path, "openclaw.json")) as f:
             cfg = json.load(f)
         primary = cfg.get("agents", {}).get("defaults", {}).get("model", {}).get("primary", "unknown")
         defaults = {}
@@ -120,7 +118,7 @@ def get_session_model(session_key, session_file=None):
         parts = (session_key or "").split(":")
         agent_name = parts[1] if len(parts) >= 2 else "main"
         sessions_json = os.path.join(
-            OPENCLAW_PATH, "agents", agent_name, "sessions", "sessions.json"
+            _openclaw_path, "agents", agent_name, "sessions", "sessions.json"
         )
         try:
             with open(sessions_json, "r") as f:
@@ -129,7 +127,7 @@ def get_session_model(session_key, session_file=None):
             sid = session_data.get("sessionId", "")
             if sid:
                 candidate = os.path.join(
-                    OPENCLAW_PATH, "agents", agent_name, "sessions", f"{sid}.jsonl"
+                    _openclaw_path, "agents", agent_name, "sessions", f"{sid}.jsonl"
                 )
                 if os.path.exists(candidate):
                     jsonl_path = candidate
@@ -484,12 +482,17 @@ def run_refresh():
             return True  # debounced, serve cached
 
         try:
-            subprocess.run(
+            result = subprocess.run(
                 ["bash", REFRESH_SCRIPT],
                 timeout=REFRESH_TIMEOUT,
                 cwd=DIR,
                 capture_output=True,
+                text=True,
             )
+            if result.stdout:
+                print(f"[refresh] {result.stdout.strip()}")
+            if result.stderr:
+                print(f"[refresh] {result.stderr.strip()}")
             _last_refresh = time.time()
             return True
         except subprocess.TimeoutExpired:
@@ -514,7 +517,7 @@ def main():
     _ai_cfg = cfg.get("ai", {})
     dotenv_path = _ai_cfg.get("dotenvPath", "~/.openclaw/.env")
     env_vars = read_dotenv(dotenv_path)
-    _gateway_token = env_vars.get("OPENCLAW_GATEWAY_TOKEN", "")
+    _gateway_token = env_vars.get("OPENCLAW_GATEWAY_TOKEN", _gateway_token)
     if _ai_cfg.get("enabled", True) and not _gateway_token:
         print("[dashboard] WARNING: ai.enabled=true but OPENCLAW_GATEWAY_TOKEN not found in dotenv")
 
@@ -564,6 +567,13 @@ examples:
             print(f"[dashboard] LAN access: http://{local_ip}:{args.port}/")
         except Exception:
             pass
+    import signal
+
+    def _shutdown(signum, frame):
+        raise KeyboardInterrupt
+
+    signal.signal(signal.SIGTERM, _shutdown)
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:
