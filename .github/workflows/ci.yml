@@ -45,7 +45,7 @@ jobs:
           python-version: 3.14
 
       - name: Install dependencies
-        run: pip install pytest playwright
+        run: pip install pytest pytest-timeout playwright
 
       - name: Install Playwright browsers
         run: python -m playwright install chromium --with-deps
