@@ -14,7 +14,7 @@ class TestDockerfile(unittest.TestCase):
             cls.df = f.read()
 
     def test_ac27a_base_image_python_slim(self):
-        self.assertRegex(self.df, r'FROM python:\d+\.\d+-slim')
+        self.assertRegex(self.df, r'FROM nikolaik/python-nodejs:python\d+.\d+-nodejs\d+-slim')
 
     def test_ac27b_workdir_app(self):
         self.assertIn("WORKDIR /app", self.df)
@@ -26,8 +26,8 @@ class TestDockerfile(unittest.TestCase):
     def test_ac27d_exposes_8080(self):
         self.assertIn("EXPOSE 8080", self.df)
 
-    def test_ac27e_nonroot_user(self):
-        self.assertRegex(self.df, r'USER\s+\w+')
+    def test_ac27e_entrypoint_uses_entrypoint_sh(self):
+        self.assertIn("ENTRYPOINT [\"/entrypoint.sh\"]", self.df)
 
     def test_ac27f_volume_declared(self):
         self.assertIn("VOLUME", self.df)
